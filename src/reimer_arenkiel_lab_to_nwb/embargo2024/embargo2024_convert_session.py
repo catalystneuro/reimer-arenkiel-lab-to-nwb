@@ -35,11 +35,11 @@ def session_to_nwb(
         dict(ImagingChannel1=dict(folder_path=str(folder_path), file_pattern="*.tif", channel_name="Channel 1"))
     )
     conversion_options.update(dict(ImagingChannel1=dict(stub_test=stub_test, photon_series_index=0)))
-    # Add Imaging Channel2
-    source_data.update(
-        dict(ImagingChannel2=dict(folder_path=str(folder_path), file_pattern="*.tif", channel_name="Channel 2"))
-    )
-    conversion_options.update(dict(ImagingChannel2=dict(stub_test=stub_test, photon_series_index=1)))
+    # Add Imaging Channel2 # not needed
+    # source_data.update(
+    #     dict(ImagingChannel2=dict(folder_path=str(folder_path), file_pattern="*.tif", channel_name="Channel 2"))
+    # )
+    # conversion_options.update(dict(ImagingChannel2=dict(stub_test=stub_test, photon_series_index=1)))
 
     converter = Embargo2024NWBConverter(source_data=source_data)
 
