@@ -30,7 +30,7 @@ def session_to_nwb(
     list_of_fov_boundaries = [[0,400], [450, 850], [900,1300]]
     # Add Imaging Green Channel Plane1
     for i,fov_boundaries in enumerate(list_of_fov_boundaries):
-        interface_name = f"ImagingGreenChannelFOV{i}"
+        interface_name = f"ImagingGreenChannelFOV{i+1}"
         source_data[interface_name] = {
             "folder_path": str(folder_path),
             "file_pattern": f"{subject_id}_{session_id}_*.tif",

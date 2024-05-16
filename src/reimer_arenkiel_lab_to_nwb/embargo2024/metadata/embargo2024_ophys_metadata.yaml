@@ -4,21 +4,23 @@ Ophys:
       description: Janelia 2P-RAM mesoscope.
       manufacturer: ThorLabs
   TwoPhotonSeries:
-    - name: TwoPhotonSeriesGreenChannelFOV0
-      description: To maximize frame rates in each imaging session, fields of view were defined for acquisition that included a single plane visualizing only the dorsal surface of bilateral OBs (1800 um long x ~600um wide fields of view that were tiled to cover a total field of view that was 1800-2500 um wide). Images were acquired continuously throughout experiments (during odor presentations, intertrial, and inter-block intervals), with 5um/pixel resolution at the fastest possible frame rate allowed by the imaging parameters (15-18 Hz).
-      imaging_plane: ImagingPlaneGreenChannel
-      unit: n.a.
     - name: TwoPhotonSeriesGreenChannelFOV1
+      description: FOV1 refers to the left part of the original ScanImage acquisition. To maximize frame rates in each imaging session, fields of view were defined for acquisition that included a single plane visualizing only the dorsal surface of bilateral OBs (1800 um long x ~600um wide fields of view that were tiled to cover a total field of view that was 1800-2500 um wide). Images were acquired continuously throughout experiments (during odor presentations, intertrial, and inter-block intervals), with 5um/pixel resolution at the fastest possible frame rate allowed by the imaging parameters (15-18 Hz).
       imaging_plane: ImagingPlaneGreenChannel
       unit: n.a.
     - name: TwoPhotonSeriesGreenChannelFOV2
+      description: FOV2 refers to the central part of the original ScanImage acquisition. To maximize frame rates in each imaging session, fields of view were defined for acquisition that included a single plane visualizing only the dorsal surface of bilateral OBs (1800 um long x ~600um wide fields of view that were tiled to cover a total field of view that was 1800-2500 um wide). Images were acquired continuously throughout experiments (during odor presentations, intertrial, and inter-block intervals), with 5um/pixel resolution at the fastest possible frame rate allowed by the imaging parameters (15-18 Hz).
+      imaging_plane: ImagingPlaneGreenChannel
+      unit: n.a.
+    - name: TwoPhotonSeriesGreenChannelFOV3
+      description: FOV3 refers to the central part of the original ScanImage acquisition. To maximize frame rates in each imaging session, fields of view were defined for acquisition that included a single plane visualizing only the dorsal surface of bilateral OBs (1800 um long x ~600um wide fields of view that were tiled to cover a total field of view that was 1800-2500 um wide). Images were acquired continuously throughout experiments (during odor presentations, intertrial, and inter-block intervals), with 5um/pixel resolution at the fastest possible frame rate allowed by the imaging parameters (15-18 Hz).
       imaging_plane: ImagingPlaneGreenChannel
       unit: n.a.
   ImagingPlane:
     - name: ImagingPlaneGreenChannel
       description: Imaging plane for the Green channel recorded with 2p microscope.
       excitation_lambda: 920.0  # in nm
-      location: Whole Brain
+      location: Whole Brain # to ask
       device: TwoPhotonMicroscope
       optical_channel:
         - name: Green
