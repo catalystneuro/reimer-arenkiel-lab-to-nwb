@@ -122,6 +122,11 @@ def add_respiration(nwbfile: NWBFile, key=None, verbose: bool = False):
     if verbose:
         print(f"Adding respiration data for {key}")
 
+    if not odor.Respiration & key:
+        if verbose:
+            print(f"No respiration data found for {key}")
+        return
+
     resp_trace, resp_times = (odor.Respiration & key).fetch1('trace', 'times')
 
     respiration_signal = TimeSeries(
@@ -133,8 +138,6 @@ def add_respiration(nwbfile: NWBFile, key=None, verbose: bool = False):
     )
 
     nwbfile.add_acquisition(respiration_signal)
-
-    return nwbfile
 
 
 def add_summary_images(nwbfile, key=None, verbose=False):
@@ -344,7 +347,7 @@ verbose = True
 
 keys = [key for key in odor.MesoMatch()]
 
-for key in tqdm(keys, desc="Processing sessions"):
+for key in tqdm(keys[1:], desc="Processing sessions"):
     nwbfile = init_nwbfile(key=key)
     add_treadmill(nwbfile, key=key, verbose=verbose)
     add_subject(nwbfile, key=key, verbose=verbose)
