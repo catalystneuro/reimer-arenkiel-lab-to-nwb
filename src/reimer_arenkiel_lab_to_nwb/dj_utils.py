@@ -1,5 +1,6 @@
 import uuid
 import datetime
+from copy import deepcopy
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -22,7 +23,8 @@ import datajoint as dj
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 from tqdm import tqdm, trange
 
-dj.conn()
+conn = dj.conn()
+conn.set_query_cache()
 
 odor = dj.create_virtual_module("odor", "pipeline_odor")
 stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
@@ -32,7 +34,7 @@ meso = dj.create_virtual_module("meso", "pipeline_meso")
 all_sessions = dj.create_virtual_module("all_sessions", "pipeline_experiment")
 
 
-def add_treadmill(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
+def add_treadmill(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> None:
     """Fetch treadmill data and synchronize to odor clock using linear interpolation with extrapolation"""
 
     # key = key or {'animal_id': 124, 'odor_session': 4}
@@ -81,7 +83,7 @@ def add_treadmill(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
     )
 
 
-def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
+def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> None:
     """Fetch subject data and add to NWBFile"""
 
     # key = key or {'animal_id': 125}
@@ -95,12 +97,11 @@ def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
         date_of_birth=subject_info["dob"],
         sex=subject_info["sex"] if subject_info["sex"] in ("M", "F") else "U",
         description=subject_info["mouse_notes"] or "no notes",
+        species="Mus musculus",
     )
 
-    return nwbfile
 
-
-def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
+def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> None:
     """Fetch odor trials data and add to NWBFile"""
 
     # key = key or {'animal_id': 125, 'odor_session': 0}
@@ -120,8 +121,6 @@ def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
             concentration=float(trial["concentration"]),
             solution_date=str(trial["solution_date"]),
         )
-
-    return nwbfile
 
 
 def add_respiration(nwbfile: NWBFile, key=None, verbose: bool = False):
@@ -150,7 +149,7 @@ def add_respiration(nwbfile: NWBFile, key=None, verbose: bool = False):
     nwbfile.add_acquisition(respiration_signal)
 
 
-def add_summary_images(nwbfile, key=None, verbose=False):
+def add_summary_images(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
     # key = key or {
     #     'animal_id': 124,
     #     'session': 3,
@@ -188,6 +187,10 @@ def add_summary_images(nwbfile, key=None, verbose=False):
 
 
 default_ophys_metadata = dict(
+    NWBFile=dict(
+        institution="Baylor College of Medicine",
+        keywords=["odor", "olfaction", "calcium imaging", "mesoscope"],
+    ),
     Ophys=dict(
         Device=dict(
             name="Two-photon microscope",
@@ -292,7 +295,7 @@ def add_plane_segmentation(
     return ps
 
 
-def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: bool = False):
+def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: bool = False) -> None:
     # key = key or {
     #     'animal_id': 125,
     #     'session': 1,
@@ -341,30 +344,27 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
         fluoresence = nwbfile.processing["ophys"].data_interfaces[f"Fluorescence{segmentation_method}"]
     fluoresence.add_roi_response_series(roi_response_series)
 
-    return nwbfile
 
-
-def init_nwbfile(key):
+def init_nwbfile(key: dict) -> NWBFile:
     data = (all_sessions.Session & key).fetch1()
 
-    nwbfile = NWBFile(
+    nwbfile_kwargs = deepcopy(default_ophys_metadata["NWBFile"])
+
+    nwbfile_kwargs.update(dict(
         session_description=f"animal {data['animal_id']} session {data['session']}",
         session_id=str(data["session"]),
         identifier=str(uuid.uuid4()),
         session_start_time=datetime.datetime.combine(
             data["session_date"], datetime.time(0, 0)
         ).replace(tzinfo=ZoneInfo("America/Chicago"))
-    )
+    ))
+
+    nwbfile = NWBFile(**nwbfile_kwargs)
 
     return nwbfile
 
 
-## run
-verbose = True
-
-keys = [key for key in odor.MesoMatch()]
-
-for key in tqdm(keys, desc="Processing sessions"):
+def make_session_nwbfile(key, verbose=False):
     nwbfile = init_nwbfile(key=key)
     add_treadmill(nwbfile, key=key, verbose=verbose)
     add_subject(nwbfile, key=key, verbose=verbose)
@@ -377,23 +377,27 @@ for key in tqdm(keys, desc="Processing sessions"):
     # ophys_keys include all the field, channel, and segmentation_method associated with this session. We will iterate over
     ophys_keys = [ophys_key for ophys_key in meso.Segmentation() & key]
 
-    # iterate over fields
-    for ophys_key in tqdm(ophys_keys, desc="Processing ophys data"):
-        imaging_plane = add_imaging_plane(nwbfile, device=device, key=ophys_key, verbose=verbose)
-        # to do: iterate over segmentation methods if there are multiple
-        plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane=imaging_plane, key=ophys_key)
-        add_fluorescence(nwbfile, plane_segmentation=plane_segmentation, key=ophys_key)
+    # iterate over each ophys_key
+    for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
+        imaging_plane = add_imaging_plane(nwbfile, key=ophys_key, verbose=verbose, device=device)
+        plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
+        add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
 
-        with NWBHDF5IO(f"sub-{key['animal_id']}_session-{key['session']}.nwb", mode="w") as io:
-            io.write(nwbfile)
-
-# this threw an error when configuring datasets. Let's save uncompressed datasets for now
-# configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath="test.nwb")
+    return nwbfile
 
 
-# print(
-#     nwbfile.processing["ophys"].
-#     data_interfaces["ImageSegmentation"].
-#     plane_segmentations["PlaneSegmentation_field1_channel1_segmentation-method1"].
-#     to_dataframe()
-# )
+## run
+verbose = True
+
+keys = [key for key in odor.MesoMatch()]
+
+for key in tqdm(keys, desc="Processing sessions"):
+
+    nwbfile = make_session_nwbfile(key, verbose=verbose)
+    fpath = f"sub-{key['animal_id']}_session-{key['session']}.nwb"
+
+    # with NWBHDF5IO(fpath, mode="w") as io:
+    #     io.write(nwbfile)
+
+    # this threw an error when configuring datasets. Let's save uncompressed datasets for now
+    configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=fpath)
