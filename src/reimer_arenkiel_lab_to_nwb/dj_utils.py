@@ -20,7 +20,6 @@ odor = dj.create_virtual_module('odor', 'pipeline_odor')
 stimulus = dj.create_virtual_module('stimulus', 'pipeline_stimulus')
 treadmill = dj.create_virtual_module('treadmill', 'pipeline_treadmill')
 mice = dj.create_virtual_module('mice', 'common_mice')
-odor = dj.create_virtual_module('odor', 'pipeline_odor')
 meso = dj.create_virtual_module('meso', 'pipeline_meso')
 all_sessions = dj.create_virtual_module('all_sessions', 'pipeline_experiment')
 
