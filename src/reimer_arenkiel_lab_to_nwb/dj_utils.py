@@ -315,6 +315,11 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
     fluorescence_trace = np.vstack((meso.Fluorescence.Trace & key).fetch("trace")).T
     odor_scan_times = (odor.OdorSync & restriction).fetch1("frame_times")
 
+    if verbose:
+        if len(fluorescence_trace) != len(odor_scan_times):
+            print(f"Length of fluorescence trace: {len(fluorescence_trace)}")
+            print(f"Length of odor scan times: {len(odor_scan_times)}")
+
     if "ophys" not in nwbfile.processing:
         nwbfile.create_processing_module(name="ophys", description="ophys data processing")
 
@@ -325,7 +330,7 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
         description="Fluorescence trace from imaging plane",
         data=fluorescence_trace,
         unit="n.a.",
-        timestamps=odor_scan_times,
+        timestamps=odor_scan_times[:len(fluorescence_trace)],
         rois=rt_region,
     )
 
@@ -369,7 +374,7 @@ for key in tqdm(keys, desc="Processing sessions"):
 
     device = nwbfile.create_device(**default_ophys_metadata["Ophys"]["Device"])
 
-    # ophys_keys are all the ophys settings associated with this session. We will iterate over field, channel, and segmentation_method
+    # ophys_keys include all the field, channel, and segmentation_method associated with this session. We will iterate over
     ophys_keys = [ophys_key for ophys_key in meso.Segmentation() & key]
 
     # iterate over fields
