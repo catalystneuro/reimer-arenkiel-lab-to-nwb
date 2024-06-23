@@ -1,5 +1,6 @@
 import uuid
 import datetime
+from zoneinfo import ZoneInfo
 
 import numpy as np
 from pynwb import NWBFile, NWBHDF5IO
@@ -345,9 +346,9 @@ def init_nwbfile(key):
         session_description=f"animal {data['animal_id']} session {data['session']}",
         session_id=str(data["session"]),
         identifier=str(uuid.uuid4()),
-        session_start_time=datetime.datetime.combine(data["session_date"], datetime.time(0, 0)).astimezone(
-            "US/Central"
-        ),
+        session_start_time=datetime.datetime.combine(
+            data["session_date"], datetime.time(0, 0)
+        ).replace(tzinfo=ZoneInfo("America/Chicago"))
     )
 
     return nwbfile
