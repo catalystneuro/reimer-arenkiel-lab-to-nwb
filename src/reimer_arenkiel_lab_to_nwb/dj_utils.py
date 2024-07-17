@@ -94,7 +94,7 @@ def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> No
     subject_info = (mice.Mice & key).fetch1()
     nwbfile.subject = Subject(
         subject_id=str(subject_info["animal_id"]),
-        date_of_birth=subject_info["dob"],
+        date_of_birth=datetime.datetime.combine(subject_info['dob'], datetime.datetime.min.time()),
         sex=subject_info["sex"] if subject_info["sex"] in ("M", "F") else "U",
         description=subject_info["mouse_notes"] or "no notes",
         species="Mus musculus",
