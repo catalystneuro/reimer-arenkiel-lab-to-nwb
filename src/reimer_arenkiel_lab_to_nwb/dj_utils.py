@@ -217,7 +217,7 @@ default_ophys_metadata = dict(
 
 
 def add_imaging_plane(
-    nwbfile: NWBFile, device: Device, key: dict = None, metadata: dict = None, verbose: bool = False
+        nwbfile: NWBFile, device: Device, key: dict = None, metadata: dict = None, verbose: bool = False
 ) -> ImagingPlane:
     # key = key or {
     #     'animal_id': 125,
@@ -249,7 +249,7 @@ def add_imaging_plane(
 
 
 def add_plane_segmentation(
-    nwbfile: NWBFile, imaging_plane: ImagingPlane, key: dict = None, metadata: dict = None, verbose: bool = False
+        nwbfile: NWBFile, imaging_plane: ImagingPlane, key: dict = None, metadata: dict = None, verbose: bool = False
 ) -> PlaneSegmentation:
     # key = key or {
     #     'animal_id': 125,
@@ -312,7 +312,7 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
     field, channel, segmentation_method = key["field"], key["channel"], key["segmentation_method"]
 
     restriction = (
-        odor.MesoMatch & key
+            odor.MesoMatch & key
     )  # Since tables can be restrictions, saving this shorthand simplifies following code
 
     fluorescence_trace = np.vstack((meso.Fluorescence.Trace & key).fetch("trace")).T
@@ -345,10 +345,11 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
     fluoresence.add_roi_response_series(roi_response_series)
 
 
-def init_nwbfile(key: dict) -> NWBFile:
+def init_nwbfile(key: dict, metadata: dict = None) -> NWBFile:
     data = (all_sessions.Session & key).fetch1()
+    metadata = metadata or default_ophys_metadata
 
-    nwbfile_kwargs = deepcopy(default_ophys_metadata["NWBFile"])
+    nwbfile_kwargs = deepcopy(metadata["NWBFile"])
 
     nwbfile_kwargs.update(dict(
         session_description=f"animal {data['animal_id']} session {data['session']}",
@@ -386,18 +387,25 @@ def make_session_nwbfile(key, verbose=False):
     return nwbfile
 
 
-## run
-verbose = True
+def get_session_keys():
+    return [key for key in odor.MesoMatch()]
 
-keys = [key for key in odor.MesoMatch()]
 
-for key in tqdm(keys, desc="Processing sessions"):
+def get_ophys_keys(key: dict):
+    return [ophys_key for ophys_key in meso.Segmentation() & key]
 
-    nwbfile = make_session_nwbfile(key, verbose=verbose)
-    fpath = f"sub-{key['animal_id']}_session-{key['session']}.nwb"
 
-    # with NWBHDF5IO(fpath, mode="w") as io:
-    #     io.write(nwbfile)
+if __name__ == "__main__":
+    verbose = True
 
-    # this threw an error when configuring datasets. Let's save uncompressed datasets for now
-    configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=fpath)
+    keys = [key for key in odor.MesoMatch()]
+
+    for key in tqdm(keys, desc="Processing sessions"):
+        nwbfile = make_session_nwbfile(key, verbose=verbose)
+        fpath = f"sub-{key['animal_id']}_session-{key['session']}.nwb"
+
+        # with NWBHDF5IO(fpath, mode="w") as io:
+        #     io.write(nwbfile)
+
+        # this threw an error when configuring datasets. Let's save uncompressed datasets for now
+        configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=fpath)
