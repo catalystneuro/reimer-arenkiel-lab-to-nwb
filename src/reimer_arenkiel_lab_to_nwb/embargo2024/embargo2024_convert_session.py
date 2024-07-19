@@ -2,10 +2,10 @@
 
 from pathlib import Path
 from typing import Union
-from zoneinfo import ZoneInfo
-from natsort import natsorted
+from time import time
 from tqdm import tqdm
 from neuroconv.utils import load_dict_from_file, dict_deep_update
+from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 
 from reimer_arenkiel_lab_to_nwb.embargo2024 import Embargo2024NWBConverter
 from reimer_arenkiel_lab_to_nwb.dj_utils import get_session_keys, get_ophys_keys, init_nwbfile, add_treadmill, add_subject, add_odor_trials, add_respiration, add_summary_images, add_imaging_plane, add_plane_segmentation, add_fluorescence
@@ -74,13 +74,14 @@ def session_to_nwb(
     metadata = dict_deep_update(metadata, editable_metadata)
 
     # Add ophys metadata
-    # metadata.pop("Ophys", None)
-    # metadata = dict_deep_update(metadata, ophys_metadata)
+    metadata.pop("Ophys", None)
+    metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion
-    converter.run_conversion(
-        metadata=metadata, nwbfile=nwbfile, nwbfile_path=nwbfile_path, conversion_options=conversion_options, overwrite=True
+    converter.add_to_nwbfile(
+        metadata=metadata, nwbfile=nwbfile, conversion_options=conversion_options
     )
+    configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=nwbfile_path)
 
 
 if __name__ == "__main__":
@@ -91,10 +92,12 @@ if __name__ == "__main__":
 
     keys = get_session_keys()
 
-
+    start_time = time()
     session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,
         key=keys[4],
         stub_test=stub_test,
     )
+    end_time = time()
+    print(f"Running time:{end_time - start_time}")
