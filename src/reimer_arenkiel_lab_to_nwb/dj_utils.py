@@ -22,9 +22,7 @@ from pynwb.base import TimeSeries, Images
 import datajoint as dj
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 from tqdm import tqdm, trange
-dj.config["database.host"] = "165.227.73.182:3306"
-dj.config["database.user"] = "catalystneuro_asap"
-dj.config["database.password"] = "JRlab2024!"
+
 conn = dj.conn()
 conn.set_query_cache()
 
