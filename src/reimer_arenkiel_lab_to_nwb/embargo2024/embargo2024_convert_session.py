@@ -8,7 +8,7 @@ from neuroconv.utils import load_dict_from_file, dict_deep_update
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 
 from reimer_arenkiel_lab_to_nwb.embargo2024 import Embargo2024NWBConverter
-from reimer_arenkiel_lab_to_nwb.dj_utils import get_session_keys, get_ophys_keys, init_nwbfile, add_treadmill, add_subject, add_odor_trials, add_respiration, add_summary_images, add_imaging_plane, add_plane_segmentation, add_fluorescence
+from reimer_arenkiel_lab_to_nwb.dj_utils import *
 
 def session_to_nwb(
         data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], key: dict, stub_test: bool = False, verbose: bool = True
@@ -42,31 +42,27 @@ def session_to_nwb(
     ophys_keys = get_ophys_keys(key=key)
 
     # iterate over each ophys_key
-    for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
-        imaging_plane = add_imaging_plane(nwbfile, key=ophys_key, verbose=verbose, device=device)
-        plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
-        add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
+    fov_boundaries = [[0, 400], [450, 850], [900, 1300]]
 
-    list_of_fov_boundaries = [[0, 400], [450, 850], [900, 1300]]
-    # Add Imaging Green Channel Plane1
-    for i, fov_boundaries in enumerate(list_of_fov_boundaries):
-        interface_name = f"ImagingGreenChannelFOV{i + 1}"
+    for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
+        interface_name = f"ImagingFOV{ophys_key["field"]}"
         source_data[interface_name] = {
             "folder_path": str(folder_path),
             "file_pattern": f"{key['animal_id']}_{key['session']}_*.tif",
             "channel_name": "Channel 1",
-            "fov_boundaries": fov_boundaries
+            "fov_boundaries": fov_boundaries[ophys_key["field"]-1]
         }
         conversion_options[interface_name] = {
             "stub_test": stub_test,
-            "photon_series_index": i,
+            "photon_series_index": ophys_key["field"]-1,
             "photon_series_type": "TwoPhotonSeries",
         }
     converter = Embargo2024NWBConverter(source_data=source_data)
 
+    converter.temporally_align_data_interfaces(key=key)
+
     # Add datetime to conversion
     metadata = converter.get_metadata()
-    metadata["Subject"].update(subject_id=str(key['animal_id']))
 
     # Update default metadata with the editable in the corresponding yaml file
     editable_metadata_path = Path(__file__).parent / "embargo2024_metadata.yaml"
@@ -81,6 +77,13 @@ def session_to_nwb(
     converter.add_to_nwbfile(
         metadata=metadata, nwbfile=nwbfile, conversion_options=conversion_options
     )
+
+    for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
+        photon_series_name = metadata["Ophys"]["TwoPhotonSeries"][ophys_key["field"]-1]["name"]
+        imaging_plane = nwbfile.acquisition[photon_series_name].imaging_plane
+        plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
+        add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
+
     configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=nwbfile_path)
 
 
