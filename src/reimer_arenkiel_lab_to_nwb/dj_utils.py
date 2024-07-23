@@ -316,7 +316,6 @@ def init_nwbfile(key: dict, metadata: dict = None) -> NWBFile:
     nwbfile_kwargs = deepcopy(metadata["NWBFile"])
 
     nwbfile_kwargs.update(dict(
-        session_description=f"animal {data['animal_id']} session {data['session']}",
         session_id=str(data["session"]),
         identifier=str(uuid.uuid4()),
         session_start_time=datetime.datetime.combine(

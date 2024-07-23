@@ -20,7 +20,7 @@ Ophys:
     - name: imaging_plane
       description: Imaging plane for the Green channel recorded with 2p microscope.
       excitation_lambda: 920.0  # in nm
-      location: Whole Brain # to ask
+      location: OB
       device: two_photon_microscope
       optical_channel:
         - name: green_channel
