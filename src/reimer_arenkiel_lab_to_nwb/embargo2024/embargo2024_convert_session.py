@@ -95,7 +95,6 @@ if __name__ == "__main__":
 
     keys = get_session_keys()
 
-    start_time = time()
     session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,
