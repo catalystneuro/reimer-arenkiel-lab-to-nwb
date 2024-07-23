@@ -37,8 +37,6 @@ all_sessions = dj.create_virtual_module("all_sessions", "pipeline_experiment")
 def add_treadmill(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> None:
     """Fetch treadmill data and synchronize to odor clock using linear interpolation with extrapolation"""
 
-    # key = key or {'animal_id': 124, 'odor_session': 4}
-
     if verbose:
         print(f"Adding treadmill data for {key}")
 
@@ -86,8 +84,6 @@ def add_treadmill(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> 
 def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> None:
     """Fetch subject data and add to NWBFile"""
 
-    # key = key or {'animal_id': 125}
-
     if verbose:
         print(f"Adding subject data for {key}")
 
@@ -103,8 +99,6 @@ def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> No
 
 def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> None:
     """Fetch odor trials data and add to NWBFile"""
-
-    # key = key or {'animal_id': 125, 'odor_session': 0}
 
     if verbose:
         print(f"Adding odor trials for {key}")
@@ -125,8 +119,6 @@ def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -
 
 def add_respiration(nwbfile: NWBFile, key=None, verbose: bool = False):
     """Fetch respiration data and add to NWBFile"""
-
-    # key = key or {'animal_id': 124, 'odor_session': 4, 'recording_idx': 2}
 
     if verbose:
         print(f"Adding respiration data for {key}")
@@ -150,12 +142,7 @@ def add_respiration(nwbfile: NWBFile, key=None, verbose: bool = False):
 
 
 def add_summary_images(nwbfile: NWBFile, key: dict = None, verbose: bool = False):
-    # key = key or {
-    #     'animal_id': 124,
-    #     'session': 3,
-    #     'scan_idx': 1,
-    #     'pipeline_version': 1,
-    # }
+    """Fetch summary images data and add to NWBFile"""
 
     if verbose:
         print(f"Adding summary images for {key}")
@@ -165,7 +152,7 @@ def add_summary_images(nwbfile: NWBFile, key: dict = None, verbose: bool = False
 
     avg_images = [
         GrayscaleImage(
-            name=f"average_image_field{img_row['field']}_channel{img_row['channel']}",
+            name=f"average_image_FOV{img_row['field']}_channel{img_row['channel']}",
             description="average image from SummaryImages.Average table",
             data=img_row["average_image"],
         )
@@ -176,7 +163,7 @@ def add_summary_images(nwbfile: NWBFile, key: dict = None, verbose: bool = False
 
     corr_images = [
         GrayscaleImage(
-            name=f"correlation_image_field{img_row['field']}_channel{img_row['channel']}",
+            name=f"correlation_image_FOV{img_row['field']}_channel{img_row['channel']}",
             description="correlation image from SummaryImages.Correlation table",
             data=img_row["correlation_image"],
         )
@@ -193,73 +180,52 @@ default_ophys_metadata = dict(
     ),
     Ophys=dict(
         Device=dict(
-            name="Two-photon microscope",
-            description="My two-photon microscope",
-            # manufacturer="The best microscope manufacturer",
+            name="two_photon_microscope",
+            description="Janelia 2P-RAM mesoscope.",
+            manufacturer="ThorLabs",
         ),
         OpticalChannel=dict(
-            name="OpticalChannel",
-            description="an optical channel",
-            emission_lambda=500.0,
+            name="green_channel",
+            description="Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide "
+                        "photomultiplier tube (Hamamatsu).",
+            emission_lambda=525.0,
         ),
         ImagingPlane=dict(
-            imaging_rate=30.0,
-            excitation_lambda=600.0,
-            indicator="GFP",
-            location="V1",
-            # grid_spacing=[0.01, 0.01],
-            # grid_spacing_unit="meters",
-            # origin_coords=[1.0, 2.0, 3.0],
-            # origin_coords_unit="meters",
+            name="imaging_plane",
+            description="Imaging plane for the Green channel recorded with 2p microscope.",
+            excitation_lambda=920.0,
+            indicator="GCaMP6f",
+            location="Whole Brain",
         ),
     )
 )
 
 
 def add_imaging_plane(
-    nwbfile: NWBFile, device: Device, key: dict = None, metadata: dict = None, verbose: bool = False
+        nwbfile: NWBFile, device: Device, key: dict = None, metadata: dict = None, verbose: bool = False
 ) -> ImagingPlane:
-    # key = key or {
-    #     'animal_id': 125,
-    #     'session': 1,
-    #     'scan_idx': 1,
-    #     'pipe_version': 1,
-    #     'field': 1,
-    #     'channel': 1,
-    # }
-
+    """Fetch imaging plane metadata and add to NWBFile"""
+    
     if verbose:
         print(f"Adding imaging plane for {key}")
 
     metadata = metadata or default_ophys_metadata
 
-    field, channel = key["field"], key["channel"]
-
     optical_channel = OpticalChannel(**metadata["Ophys"]["OpticalChannel"])
 
     imaging_plane = nwbfile.create_imaging_plane(
-        name=f"ImagingPlane_field{field}_channel{channel}",
+        **metadata["Ophys"]["ImagingPlane"],
         optical_channel=optical_channel,
         device=device,
-        description=f"Imaging plane for field {field} channel {channel}",
-        **metadata["Ophys"]["ImagingPlane"],
     )
 
     return imaging_plane
 
 
 def add_plane_segmentation(
-    nwbfile: NWBFile, imaging_plane: ImagingPlane, key: dict = None, metadata: dict = None, verbose: bool = False
+        nwbfile: NWBFile, imaging_plane: ImagingPlane, key: dict = None, metadata: dict = None, verbose: bool = False
 ) -> PlaneSegmentation:
-    # key = key or {
-    #     'animal_id': 125,
-    #     'session': 1,
-    #     'scan_idx': 1,
-    #     'pipe_version': 1,
-    #     'field': 1,
-    #     'channel': 1,
-    #     'segmentation_method': 1,
-    # }
+    """Fetch segmentation data and add to NWBFile"""
 
     if verbose:
         print(f"Adding plane segmentation for {key}")
@@ -278,8 +244,8 @@ def add_plane_segmentation(
         img_seg = nwbfile.processing["ophys"].data_interfaces[f"ImageSegmentation{segmentation_method}"]
 
     ps = img_seg.create_plane_segmentation(
-        name=f"PlaneSegmentation_field{field}_channel{channel}",
-        description="output from segmenting my favorite imaging plane",
+        name=f"plane_segmentation_FOV{field}",
+        description=f"Output from segmenting FOV{field}.",
         imaging_plane=imaging_plane,
     )
 
@@ -296,15 +262,7 @@ def add_plane_segmentation(
 
 
 def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: bool = False) -> None:
-    # key = key or {
-    #     'animal_id': 125,
-    #     'session': 1,
-    #     'scan_idx': 1,
-    #     'pipe_version': 1,
-    #     'field': 1,
-    #     'channel': 1,
-    #     'segmentation_method': 1,
-    # }
+    """Fetch fluorescence trace and add to NWBFile"""
 
     if verbose:
         print(f"Adding fluorescence trace for {key}")
@@ -312,7 +270,7 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
     field, channel, segmentation_method = key["field"], key["channel"], key["segmentation_method"]
 
     restriction = (
-        odor.MesoMatch & key
+            odor.MesoMatch & key
     )  # Since tables can be restrictions, saving this shorthand simplifies following code
 
     fluorescence_trace = np.vstack((meso.Fluorescence.Trace & key).fetch("trace")).T
@@ -329,8 +287,8 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
     rt_region = plane_segmentation.create_roi_table_region(region=slice(None), description="all ROIs")
 
     roi_response_series = RoiResponseSeries(
-        name=f"Fluorescence_field{field}_channel{channel}",
-        description="Fluorescence trace from imaging plane",
+        name=f"fluorescence_FOV{field}",
+        description=f"Fluorescence traces from FOV{field}",
         data=fluorescence_trace,
         unit="n.a.",
         timestamps=odor_scan_times[:len(fluorescence_trace)],
@@ -344,14 +302,20 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
         fluoresence = nwbfile.processing["ophys"].data_interfaces[f"Fluorescence{segmentation_method}"]
     fluoresence.add_roi_response_series(roi_response_series)
 
+def get_imaging_start_time(key: dict = None):
+    restriction = (
+            odor.MesoMatch & key
+    )  # Since tables can be restrictions, saving this shorthand simplifies following code
+    odor_scan_times = (odor.OdorSync & restriction).fetch1("frame_times")
+    return odor_scan_times[0]
 
-def init_nwbfile(key: dict) -> NWBFile:
+def init_nwbfile(key: dict, metadata: dict = None) -> NWBFile:
     data = (all_sessions.Session & key).fetch1()
+    metadata = metadata or default_ophys_metadata
 
-    nwbfile_kwargs = deepcopy(default_ophys_metadata["NWBFile"])
+    nwbfile_kwargs = deepcopy(metadata["NWBFile"])
 
     nwbfile_kwargs.update(dict(
-        session_description=f"animal {data['animal_id']} session {data['session']}",
         session_id=str(data["session"]),
         identifier=str(uuid.uuid4()),
         session_start_time=datetime.datetime.combine(
@@ -386,18 +350,25 @@ def make_session_nwbfile(key, verbose=False):
     return nwbfile
 
 
-## run
-verbose = True
+def get_session_keys():
+    return [key for key in odor.MesoMatch()]
 
-keys = [key for key in odor.MesoMatch()]
 
-for key in tqdm(keys, desc="Processing sessions"):
+def get_ophys_keys(key: dict):
+    return [ophys_key for ophys_key in meso.Segmentation() & key]
 
-    nwbfile = make_session_nwbfile(key, verbose=verbose)
-    fpath = f"sub-{key['animal_id']}_session-{key['session']}.nwb"
 
-    # with NWBHDF5IO(fpath, mode="w") as io:
-    #     io.write(nwbfile)
+if __name__ == "__main__":
+    verbose = True
 
-    # this threw an error when configuring datasets. Let's save uncompressed datasets for now
-    configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=fpath)
+    keys = [key for key in odor.MesoMatch()]
+
+    for key in tqdm(keys, desc="Processing sessions"):
+        nwbfile = make_session_nwbfile(key, verbose=verbose)
+        fpath = f"sub-{key['animal_id']}_session-{key['session']}.nwb"
+
+        # with NWBHDF5IO(fpath, mode="w") as io:
+        #     io.write(nwbfile)
+
+        # this threw an error when configuring datasets. Let's save uncompressed datasets for now
+        configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=fpath)
