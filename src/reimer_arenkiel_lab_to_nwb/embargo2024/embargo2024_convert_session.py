@@ -7,10 +7,23 @@ from neuroconv.utils import load_dict_from_file, dict_deep_update
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 
 from reimer_arenkiel_lab_to_nwb.embargo2024 import Embargo2024NWBConverter
-from reimer_arenkiel_lab_to_nwb.dj_utils import *
+from reimer_arenkiel_lab_to_nwb.dj_utils import (
+    init_nwbfile,
+    add_treadmill,
+    add_subject,
+    add_odor_trials,
+    add_respiration,
+    add_summary_images,
+    get_ophys_keys,
+    add_plane_segmentation,
+    add_fluorescence,
+    get_session_keys
+)
+
 
 def session_to_nwb(
-        data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], key: dict, stub_test: bool = False, verbose: bool = True
+        data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], key: dict, stub_test: bool = False,
+        verbose: bool = True
 ):
     data_dir_path = Path(data_dir_path)
     folder_path = data_dir_path / f"{key['animal_id']}_{key['session']}_{key['scan_idx']}"
@@ -49,11 +62,11 @@ def session_to_nwb(
             "folder_path": str(folder_path),
             "file_pattern": f"{key['animal_id']}_{key['session']}_*.tif",
             "channel_name": "Channel 1",
-            "fov_boundaries": fov_boundaries[ophys_key["field"]-1]
+            "fov_boundaries": fov_boundaries[ophys_key["field"] - 1]
         }
         conversion_options[interface_name] = {
             "stub_test": stub_test,
-            "photon_series_index": ophys_key["field"]-1,
+            "photon_series_index": ophys_key["field"] - 1,
             "photon_series_type": "TwoPhotonSeries",
         }
     converter = Embargo2024NWBConverter(source_data=source_data)
@@ -78,7 +91,7 @@ def session_to_nwb(
     )
 
     for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
-        photon_series_name = metadata["Ophys"]["TwoPhotonSeries"][ophys_key["field"]-1]["name"]
+        photon_series_name = metadata["Ophys"]["TwoPhotonSeries"][ophys_key["field"] - 1]["name"]
         imaging_plane = nwbfile.acquisition[photon_series_name].imaging_plane
         plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
         add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
