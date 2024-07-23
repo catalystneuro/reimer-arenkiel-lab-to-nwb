@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from typing import Union
-from time import time
 from tqdm import tqdm
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
