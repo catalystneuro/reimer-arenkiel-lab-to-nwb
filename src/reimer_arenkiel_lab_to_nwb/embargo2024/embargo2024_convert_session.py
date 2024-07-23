@@ -101,5 +101,3 @@ if __name__ == "__main__":
         key=keys[4],
         stub_test=stub_test,
     )
-    end_time = time()
-    print(f"Running time:{end_time - start_time}")
