@@ -20,7 +20,7 @@ def session_to_nwb(
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    nwbfile_path = output_dir_path / f"seb-{key['animal_id']}_ses-{key['session']}.nwb"
+    nwbfile_path = output_dir_path / f"sub-{key['animal_id']}_ses-{key['session']}.nwb"
 
     source_data = dict()
     conversion_options = dict()
