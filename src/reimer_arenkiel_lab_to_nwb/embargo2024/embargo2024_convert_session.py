@@ -20,7 +20,6 @@ from reimer_arenkiel_lab_to_nwb.dj_utils import (
     get_session_keys
 )
 
-
 def session_to_nwb(
         data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], key: dict, stub_test: bool = False,
         verbose: bool = True
@@ -41,7 +40,10 @@ def session_to_nwb(
     ophys_metadata_path = Path(__file__).parent / "metadata" / "embargo2024_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
-    nwbfile = init_nwbfile(key=key)
+    editable_metadata_path = Path(__file__).parent / "embargo2024_metadata.yaml"
+    editable_metadata = load_dict_from_file(editable_metadata_path)
+
+    nwbfile = init_nwbfile(key=key, metadata=editable_metadata)
     add_treadmill(nwbfile, key=key, verbose=verbose)
     add_subject(nwbfile, key=key, verbose=verbose)
     add_odor_trials(nwbfile, key=key, verbose=verbose)
@@ -77,8 +79,6 @@ def session_to_nwb(
     metadata = converter.get_metadata()
 
     # Update default metadata with the editable in the corresponding yaml file
-    editable_metadata_path = Path(__file__).parent / "embargo2024_metadata.yaml"
-    editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
 
     # Add ophys metadata
