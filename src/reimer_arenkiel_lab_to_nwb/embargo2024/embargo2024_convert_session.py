@@ -98,15 +98,14 @@ def session_to_nwb(
 
     configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=nwbfile_path)
 
-
 if __name__ == "__main__":
+    import datajoint as dj
     root_path = Path("E:/CN_data")
     data_dir_path = root_path / "Reimer-Arenkiel-CN-data-share"
     output_dir_path = root_path / "Reimer-Arenkiel-conversion_nwb/"
     stub_test = True
-
+    dj.conn()
     keys = get_session_keys()
-
     session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,

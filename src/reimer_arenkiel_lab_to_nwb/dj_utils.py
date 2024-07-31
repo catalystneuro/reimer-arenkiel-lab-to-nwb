@@ -4,7 +4,7 @@ from copy import deepcopy
 from zoneinfo import ZoneInfo
 
 import numpy as np
-from pynwb import NWBFile, NWBHDF5IO
+from pynwb import NWBFile
 from pynwb.behavior import SpatialSeries
 from pynwb.device import Device
 from pynwb.file import Subject
@@ -21,10 +21,7 @@ from scipy.interpolate import interp1d
 from pynwb.base import TimeSeries, Images
 import datajoint as dj
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
-from tqdm import tqdm, trange
-
-conn = dj.conn()
-conn.set_query_cache()
+from tqdm import tqdm
 
 odor = dj.create_virtual_module("odor", "pipeline_odor")
 stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
@@ -360,7 +357,8 @@ def get_ophys_keys(key: dict):
 
 if __name__ == "__main__":
     verbose = True
-
+    conn = dj.conn()
+    conn.set_query_cache()
     keys = [key for key in odor.MesoMatch()]
 
     for key in tqdm(keys, desc="Processing sessions"):
