@@ -1,6 +1,3 @@
 neuroconv
 nwbwidgets
 nwbinspector
-roiextractors
-scanimage-tiff-reader
-datajoint
