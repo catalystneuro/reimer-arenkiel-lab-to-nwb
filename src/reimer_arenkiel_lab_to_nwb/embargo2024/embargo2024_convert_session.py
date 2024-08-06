@@ -26,6 +26,8 @@ def session_to_nwb(
 ):
     data_dir_path = Path(data_dir_path)
     folder_path = data_dir_path / f"{key['animal_id']}_{key['session']}_{key['scan_idx']}"
+    if not folder_path.is_dir():
+        print(f"{folder_path} is not a directory")
 
     output_dir_path = Path(output_dir_path)
     if stub_test:
@@ -44,11 +46,6 @@ def session_to_nwb(
     editable_metadata = load_dict_from_file(editable_metadata_path)
 
     nwbfile = init_nwbfile(key=key, metadata=editable_metadata)
-    add_treadmill(nwbfile, key=key, verbose=verbose)
-    add_subject(nwbfile, key=key, verbose=verbose)
-    add_odor_trials(nwbfile, key=key, verbose=verbose)
-    add_respiration(nwbfile, key=key, verbose=verbose)
-    add_summary_images(nwbfile, key=key, verbose=verbose)
 
     device = nwbfile.create_device(name=ophys_metadata["Ophys"]["Device"][0]["name"])
 
@@ -56,19 +53,19 @@ def session_to_nwb(
     ophys_keys = get_ophys_keys(key=key)
 
     # iterate over each ophys_key
-    fov_boundaries = [[0, 400], [450, 850], [900, 1300]]
+    file_pattern = f"{key['animal_id']}_{key['session']}_*.tif"
 
-    for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
-        interface_name = f"ImagingFOV{ophys_key["field"]}"
+    for ophys_key in ophys_keys:
+        interface_name = f"ImagingFOV{ophys_key['field']}"
         source_data[interface_name] = {
             "folder_path": str(folder_path),
-            "file_pattern": f"{key['animal_id']}_{key['session']}_*.tif",
+            "file_pattern": file_pattern,
             "channel_name": "Channel 1",
-            "fov_boundaries": fov_boundaries[ophys_key["field"] - 1]
+            "field": ophys_key['field'],
         }
         conversion_options[interface_name] = {
             "stub_test": stub_test,
-            "photon_series_index": ophys_key["field"] - 1,
+            "photon_series_index": ophys_key['field'] - 1,
             "photon_series_type": "TwoPhotonSeries",
         }
     converter = Embargo2024NWBConverter(source_data=source_data)
@@ -86,21 +83,31 @@ def session_to_nwb(
     metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion
+    if verbose:
+        print("Add raw imaging data to NWB file")
     converter.add_to_nwbfile(
         metadata=metadata, nwbfile=nwbfile, conversion_options=conversion_options
     )
 
+    add_treadmill(nwbfile, key=key, verbose=verbose)
+    add_subject(nwbfile, key=key, verbose=verbose)
+    add_odor_trials(nwbfile, key=key, verbose=verbose)
+    add_respiration(nwbfile, key=key, verbose=verbose)
+    add_summary_images(nwbfile, key=key, verbose=verbose)
+
     for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
-        photon_series_name = metadata["Ophys"]["TwoPhotonSeries"][ophys_key["field"] - 1]["name"]
+        photon_series_name = metadata["Ophys"]["TwoPhotonSeries"][ophys_key['field'] - 1]["name"]
         imaging_plane = nwbfile.acquisition[photon_series_name].imaging_plane
         plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
         add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
 
+    if verbose:
+        print("Write NWB file")
     configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=nwbfile_path)
 
 if __name__ == "__main__":
     import datajoint as dj
-    root_path = Path("E:/CN_data")
+    root_path = Path("F:/CN_data")
     data_dir_path = root_path / "Reimer-Arenkiel-CN-data-share"
     output_dir_path = root_path / "Reimer-Arenkiel-conversion_nwb/"
     stub_test = True
@@ -109,6 +116,6 @@ if __name__ == "__main__":
     session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,
-        key=keys[4],
+        key=keys[1],
         stub_test=stub_test,
     )

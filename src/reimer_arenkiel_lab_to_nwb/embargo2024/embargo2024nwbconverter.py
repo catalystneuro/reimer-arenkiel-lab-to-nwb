@@ -16,5 +16,5 @@ class Embargo2024NWBConverter(NWBConverter):
         ophys_keys = get_ophys_keys(key=key)
         for ophys_key in ophys_keys:
             imaging_start_time = get_imaging_start_time(key=ophys_key)
-            imaging_interface = self.data_interface_objects[f"ImagingFOV{ophys_key["field"]}"]
+            imaging_interface = self.data_interface_objects[f"ImagingFOV{ophys_key['field']}"]
             imaging_interface.set_aligned_starting_time(imaging_start_time)

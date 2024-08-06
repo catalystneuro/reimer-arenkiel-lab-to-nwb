@@ -52,12 +52,14 @@ def convert_all_sessions(
 
 if __name__ == "__main__":
     # Parameters for conversion
-    root_path = Path("E:/CN_data")
+    root_path = Path("F:/CN_data")
     data_dir_path = root_path / "Reimer-Arenkiel-CN-data-share"
     output_dir_path = root_path / "Reimer-Arenkiel-conversion_nwb/"
 
     # The raw imaging data folder path
     data_dir_path = root_path / "Reimer-Arenkiel-CN-data-share"
+    if not data_dir_path.is_dir():
+        print(f"{data_dir_path} is not a directory")
 
     # The folder path to save the NWB files
     output_dir_path = root_path / "Reimer-Arenkiel-conversion_nwb/"

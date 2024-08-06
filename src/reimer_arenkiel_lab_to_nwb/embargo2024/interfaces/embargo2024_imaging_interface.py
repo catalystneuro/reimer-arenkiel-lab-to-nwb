@@ -18,16 +18,37 @@ class Embargo2024ImagingInterface(BaseImagingExtractorInterface):
         self,
         folder_path: FolderPathType,
         file_pattern: str,
-        fov_boundaries: list,
         channel_name: str,
+        field: int,
+        number_of_fields: int = 3,
         image_metadata: dict = None,
         extract_all_metadata: bool = False,
     ):
+        """Interface for reading multi-file (buffered) TIFF files produced via ScanImage., where each frames can be split in many field of view.
+
+        Parameters
+        ----------
+        folder_path : PathType
+            Path to the folder containing the TIFF files.
+        file_pattern : str
+            Pattern for the TIFF files to read -- see pathlib.Path.glob for details.
+        channel_name : str
+            Name of the channel for this extractor.
+        field : int
+            Field of view number as extracted from the ophys key.
+        number_of_fields : int, default 3
+            Number of fields to split the frame.
+        extract_all_metadata : bool
+            If True, extract metadata from every file in the folder. If False, only extract metadata from the first
+            file in the folder. The default is True.
+        """
+
         super().__init__(
             folder_path=folder_path,
             file_pattern=file_pattern,
-            fov_boundaries=fov_boundaries,
             channel_name=channel_name,
+            field=field,
+            number_of_fields=number_of_fields,
             extract_all_metadata=extract_all_metadata,
         )
         from natsort import natsorted
