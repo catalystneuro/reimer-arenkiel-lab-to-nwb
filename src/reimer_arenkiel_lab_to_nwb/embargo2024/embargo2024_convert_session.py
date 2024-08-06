@@ -20,6 +20,7 @@ from reimer_arenkiel_lab_to_nwb.dj_utils import (
     get_session_keys
 )
 
+
 def session_to_nwb(
         data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], key: dict, stub_test: bool = False,
         verbose: bool = True
@@ -47,27 +48,27 @@ def session_to_nwb(
 
     nwbfile = init_nwbfile(key=key, metadata=editable_metadata)
 
-    device = nwbfile.create_device(name=ophys_metadata["Ophys"]["Device"][0]["name"])
-
     # ophys_keys include all the field, channel, and segmentation_method associated with this session. We will iterate over
     ophys_keys = get_ophys_keys(key=key)
 
     # iterate over each ophys_key
     file_pattern = f"{key['animal_id']}_{key['session']}_*.tif"
-
+    photon_series_index = 0
     for ophys_key in ophys_keys:
-        interface_name = f"ImagingFOV{ophys_key['field']}"
+        interface_name = f"ImagingFOV{ophys_key['field']}Channel{ophys_key['channel']}"
         source_data[interface_name] = {
             "folder_path": str(folder_path),
             "file_pattern": file_pattern,
-            "channel_name": "Channel 1",
+            "channel_name": f"Channel {ophys_key['channel']}",
             "field": ophys_key['field'],
         }
         conversion_options[interface_name] = {
             "stub_test": stub_test,
-            "photon_series_index": ophys_key['field'] - 1,
+            "photon_series_index": photon_series_index,
             "photon_series_type": "TwoPhotonSeries",
         }
+        photon_series_index += 1
+
     converter = Embargo2024NWBConverter(source_data=source_data)
 
     converter.temporally_align_data_interfaces(key=key)
@@ -96,17 +97,19 @@ def session_to_nwb(
     add_summary_images(nwbfile, key=key, verbose=verbose)
 
     for ophys_key in tqdm(ophys_keys, desc="Processing imaging planes"):
-        photon_series_name = metadata["Ophys"]["TwoPhotonSeries"][ophys_key['field'] - 1]["name"]
-        imaging_plane = nwbfile.acquisition[photon_series_name].imaging_plane
-        plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
-        add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
+        if ophys_key['channel']==1:
+            imaging_plane = nwbfile.imaging_planes["imaging_plane_channel1"]
+            plane_segmentation = add_plane_segmentation(nwbfile, imaging_plane, key=ophys_key, verbose=verbose)
+            add_fluorescence(nwbfile, plane_segmentation, key=ophys_key, verbose=verbose)
 
     if verbose:
         print("Write NWB file")
     configure_and_write_nwbfile(nwbfile=nwbfile, backend="hdf5", output_filepath=nwbfile_path)
 
+
 if __name__ == "__main__":
     import datajoint as dj
+
     root_path = Path("F:/CN_data")
     data_dir_path = root_path / "Reimer-Arenkiel-CN-data-share"
     output_dir_path = root_path / "Reimer-Arenkiel-conversion_nwb/"
@@ -116,6 +119,6 @@ if __name__ == "__main__":
     session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,
-        key=keys[1],
+        key=keys[-1],
         stub_test=stub_test,
     )
