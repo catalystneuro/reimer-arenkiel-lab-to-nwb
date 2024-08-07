@@ -23,6 +23,9 @@ import datajoint as dj
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 from tqdm import tqdm
 
+conn = dj.conn()
+conn.set_query_cache()
+
 odor = dj.create_virtual_module("odor", "pipeline_odor")
 stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
 treadmill = dj.create_virtual_module("treadmill", "pipeline_treadmill")
