@@ -4,7 +4,7 @@ from copy import deepcopy
 from zoneinfo import ZoneInfo
 
 import numpy as np
-from pynwb import NWBFile, NWBHDF5IO
+from pynwb import NWBFile
 from pynwb.behavior import SpatialSeries
 from pynwb.device import Device
 from pynwb.file import Subject
@@ -21,7 +21,7 @@ from scipy.interpolate import interp1d
 from pynwb.base import TimeSeries, Images
 import datajoint as dj
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 conn = dj.conn()
 conn.set_query_cache()
@@ -153,24 +153,24 @@ def add_summary_images(nwbfile: NWBFile, key: dict = None, verbose: bool = False
     avg_images = [
         GrayscaleImage(
             name=f"average_image_FOV{img_row['field']}_channel{img_row['channel']}",
-            description="average image from SummaryImages.Average table",
+            description=f"Average image of FOV{img_row['field']} Channel {img_row['channel']}.",
             data=img_row["average_image"],
         )
         for img_row in (meso.SummaryImages.Average() & key)
     ]
 
-    nwbfile.processing["ophys"].add(Images("average_images", avg_images))
+    nwbfile.processing["ophys"].add(Images(name="average_images", images=avg_images, description="Average image of from SummaryImages.Average table."))
 
     corr_images = [
         GrayscaleImage(
             name=f"correlation_image_FOV{img_row['field']}_channel{img_row['channel']}",
-            description="correlation image from SummaryImages.Correlation table",
+            description=f"Correlation image of FOV{img_row['field']} Channel {img_row['channel']}",
             data=img_row["correlation_image"],
         )
         for img_row in (meso.SummaryImages.Correlation() & key)
     ]
 
-    nwbfile.processing["ophys"].add(Images("correlation_images", corr_images))
+    nwbfile.processing["ophys"].add(Images(name="correlation_images", images=corr_images, description="Correlation image from SummaryImages.Correlation table."))
 
 
 default_ophys_metadata = dict(
@@ -185,8 +185,8 @@ default_ophys_metadata = dict(
             manufacturer="ThorLabs",
         ),
         OpticalChannel=dict(
-            name="green_channel",
-            description="Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide "
+            name="Channel 1",
+            description="Green emitted light was collected through a 525/50 filter and a gallium arsenide phosphide "
                         "photomultiplier tube (Hamamatsu).",
             emission_lambda=525.0,
         ),
@@ -237,15 +237,15 @@ def add_plane_segmentation(
 
     avg_image = (meso.SummaryImages.Average & key).fetch1("average_image")
 
-    if f"ImageSegmentation{segmentation_method}" not in nwbfile.processing["ophys"].data_interfaces:
-        img_seg = ImageSegmentation(name=f"ImageSegmentation{segmentation_method}")
+    if f"image_segmentation" not in nwbfile.processing["ophys"].data_interfaces:
+        img_seg = ImageSegmentation(name=f"image_segmentation")
         nwbfile.processing["ophys"].add(img_seg)
     else:
-        img_seg = nwbfile.processing["ophys"].data_interfaces[f"ImageSegmentation{segmentation_method}"]
+        img_seg = nwbfile.processing["ophys"].data_interfaces[f"image_segmentation"]
 
     ps = img_seg.create_plane_segmentation(
-        name=f"plane_segmentation_FOV{field}",
-        description=f"Output from segmenting FOV{field}.",
+        name=f"plane_segmentation_FOV{field}_channel{channel}",
+        description=f"Output from segmenting FOV{field} Channel {channel}.",
         imaging_plane=imaging_plane,
     )
 
@@ -287,19 +287,19 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
     rt_region = plane_segmentation.create_roi_table_region(region=slice(None), description="all ROIs")
 
     roi_response_series = RoiResponseSeries(
-        name=f"fluorescence_FOV{field}",
-        description=f"Fluorescence traces from FOV{field}",
+        name=f"fluorescence_FOV{field}_channel{channel}",
+        description=f"Fluorescence traces from FOV{field} Channel{channel}",
         data=fluorescence_trace,
         unit="n.a.",
         timestamps=odor_scan_times[:len(fluorescence_trace)],
         rois=rt_region,
     )
 
-    if f"Fluorescence{segmentation_method}" not in nwbfile.processing["ophys"].data_interfaces:
-        fluoresence = Fluorescence(name=f"Fluorescence{segmentation_method}")
+    if f"fluorescence" not in nwbfile.processing["ophys"].data_interfaces:
+        fluoresence = Fluorescence(name=f"fluorescence")
         nwbfile.processing["ophys"].add(fluoresence)
     else:
-        fluoresence = nwbfile.processing["ophys"].data_interfaces[f"Fluorescence{segmentation_method}"]
+        fluoresence = nwbfile.processing["ophys"].data_interfaces[f"fluorescence"]
     fluoresence.add_roi_response_series(roi_response_series)
 
 def get_imaging_start_time(key: dict = None):
@@ -360,7 +360,8 @@ def get_ophys_keys(key: dict):
 
 if __name__ == "__main__":
     verbose = True
-
+    conn = dj.conn()
+    conn.set_query_cache()
     keys = [key for key in odor.MesoMatch()]
 
     for key in tqdm(keys, desc="Processing sessions"):

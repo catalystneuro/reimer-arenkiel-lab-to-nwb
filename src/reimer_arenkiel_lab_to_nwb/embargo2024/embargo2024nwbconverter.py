@@ -7,14 +7,17 @@ class Embargo2024NWBConverter(NWBConverter):
     """Primary conversion class for my extracellular electrophysiology dataset."""
 
     data_interface_classes = dict(
-        ImagingFOV1=Embargo2024ImagingInterface,
-        ImagingFOV2=Embargo2024ImagingInterface,
-        ImagingFOV3=Embargo2024ImagingInterface,
+        ImagingFOV1Channel1=Embargo2024ImagingInterface,
+        ImagingFOV2Channel1=Embargo2024ImagingInterface,
+        ImagingFOV3Channel1=Embargo2024ImagingInterface,
+        ImagingFOV1Channel2=Embargo2024ImagingInterface,
+        ImagingFOV2Channel2=Embargo2024ImagingInterface,
+        ImagingFOV3Channel2=Embargo2024ImagingInterface,
     )
 
     def temporally_align_data_interfaces(self, key: dict = None):
         ophys_keys = get_ophys_keys(key=key)
         for ophys_key in ophys_keys:
             imaging_start_time = get_imaging_start_time(key=ophys_key)
-            imaging_interface = self.data_interface_objects[f"ImagingFOV{ophys_key["field"]}"]
+            imaging_interface = self.data_interface_objects[f"ImagingFOV{ophys_key['field']}Channel{ophys_key['channel']}"]
             imaging_interface.set_aligned_starting_time(imaging_start_time)

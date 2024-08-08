@@ -13,11 +13,30 @@ class Embargo2024ImagingExtractor(ImagingExtractor):
         folder_path: PathType,
         file_pattern: str,
         channel_name: str,
-        fov_boundaries: list,
+        field: int,
+        number_of_fields: int = 3,
         extract_all_metadata: bool = True,
     ) -> None:
 
-        self.fov_boundaries = fov_boundaries
+        """Create a ImagingExtractor instance from a folder of TIFF files produced by ScanImage, where each frames can be split in many field of view.
+
+        Parameters
+        ----------
+        folder_path : PathType
+            Path to the folder containing the TIFF files.
+        file_pattern : str
+            Pattern for the TIFF files to read -- see pathlib.Path.glob for details.
+        channel_name : str
+            Name of the channel for this extractor.
+        field : int
+            Field of view number as extracted from the ophys key.
+        number_of_fields : int, default 3
+            Number of fields to split the frame.
+        extract_all_metadata : bool
+            If True, extract metadata from every file in the folder. If False, only extract metadata from the first
+            file in the folder. The default is True.
+        """
+
         self.imaging_extractor = ScanImageTiffSinglePlaneMultiFileImagingExtractor(
             folder_path=folder_path,
             file_pattern=file_pattern,
@@ -26,6 +45,9 @@ class Embargo2024ImagingExtractor(ImagingExtractor):
             extract_all_metadata=extract_all_metadata,
         )
         self._times = self.imaging_extractor._times
+        fov_length = self.imaging_extractor.get_image_size()[0] // number_of_fields
+        boundaries = [[i * fov_length, (i + 1) * fov_length if i < number_of_fields - 1 else -1] for i in range(number_of_fields)]
+        self.fov_boundaries = boundaries[field-1]
 
     def get_video(self, start_frame: Optional[int] = None, end_frame: Optional[int] = None, channel: int = 0) -> np.ndarray:
         """

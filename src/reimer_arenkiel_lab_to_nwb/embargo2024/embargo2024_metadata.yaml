@@ -1,7 +1,8 @@
 NWBFile:
   related_publications:
-    - https://www.biorxiv.org/content/10.1101/2023.04.24.538157v2
+    - https://doi.org/10.1101/2023.04.24.538157
     - https://icml-compbio.github.io/2023/papers/WCBICML2023_paper122.pdf
+  keywords: [odor-evoked activity, olfactory bulb, two photon calcium imaging]
   session_description:
     In this study, we explore odor-evoked activity representation in the olfactory bulb (OB) and how odor responses enable odor discrimination. Contrary to some previously cited theories that suggest a sparse representation, we hypothesize a more dense representation during odor presentation. A key question is how odors are reliably encoded in OB activity patterns, and how these patterns contribute to early odor processing. To address this problem, we recorded population level odor responses from the mouse OB with mesoscale two photon calcium imaging and applied machine learning techniques to suggest a model in which sparse coding is largely sufficient for olfaction, but redundant information may make odor coding more robust across different variables.
   experiment_description:
@@ -9,11 +10,11 @@ NWBFile:
   institution: Baylor College of Medicine
   lab: Reimer-Arenkiel
   experimenter:
-    - Delaram Pirhayatifard
-    - Elizabeth Hanson
-    - Paul Pfaffinger
-    - Benjamin Arenkiel
-    - Jacob Reimer
+    - Pirhayatifard, Delaram
+    - Hanson, Elizabeth
+    - Pfaffinger, Paul
+    - Arenkiel, Benjamin
+    - Reimer, Jacob
 Subject:
   species: Mus musculus
   age: P1W2D  # it is updated in the dj util function: add_subject
