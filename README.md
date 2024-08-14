@@ -69,27 +69,42 @@ Each conversion is organized in a directory of its own in the `src` directory:
     ├── setup.py
     └── src
         ├── reimer_arenkiel_lab_to_nwb
-        │   ├── conversion_directory_1
+        │   ├── another_conversion
         │   └── embargo2024
-        │       ├── embargo2024behaviorinterface.py
+        │       ├── extractors
+                │   ├── embargo2024_imaging_extractor.py
+                │   └── __init__.py
+        │       ├── interfaces
+                │   ├── embargo2024_imaging_interface.py
+                │   └── __init__.py
+        │       ├── metadata
+                │   └── embargo2024_ophys_metadata.yaml
+        │       ├── notes
+                │   └── embargo2024_notes.md
+        │       ├── tutorial
+                │   ├── conversion_outline_diagram.png
+                │   └── tutorial.ipynb
+        │       ├── embargo2024_convert_all_sessions.py
         │       ├── embargo2024_convert_session.py
-        │       ├── embargo2024_metadata.yml
+        │       ├── embargo2024_metadata.yaml
         │       ├── embargo2024nwbconverter.py
         │       ├── embargo2024_requirements.txt
-        │       ├── embargo2024_notes.md
-
         │       └── __init__.py
-        │   ├── conversion_directory_b
 
+        ├── dj_utils.py
         └── __init__.py
 
  For example, for the conversion `embargo2024` you can find a directory located in `src/reimer-arenkiel-lab-to-nwb/embargo2024`. Inside each conversion directory you can find the following files:
 
 * `embargo2024_convert_sesion.py`: this script defines the function to convert one full session of the conversion.
+* `embargo2024_convert_all_sesions.py`: this script defines the function to convert all the sessions of the conversion.
 * `embargo2024_requirements.txt`: dependencies specific to this conversion.
-* `embargo2024_metadata.yml`: metadata in yaml format for this specific conversion.
-* `embargo2024behaviorinterface.py`: the behavior interface. Usually ad-hoc for each conversion.
+* `embargo2024_metadata.yaml`: metadata in yaml format for this specific conversion.
 * `embargo2024nwbconverter.py`: the place where the `NWBConverter` class is defined.
-* `embargo2024_notes.md`: notes and comments concerning this specific conversion.
+* `notes/embargo2024_notes.md`: notes and comments concerning this specific conversion.
+* `metadata/embargo2024_ophys_metadata.yaml`: all metadata related to the imaging system in yaml format for this specific conversion.
+* `extractors/embargo2024_imaging_extractor.py`: ad hoc imaging extractor to extract raw imaging data for this conversion.
+* `interfaces/embargo2024_imaging_interface.py`: ad hoc imaging interface for this conversion.
+* `tutorial/tutorial.ipynb`: tutorial on how to read the nwb file generated with this conversion pipeline.
 
 The directory might contain other files that are necessary for the conversion but those are the central ones.
