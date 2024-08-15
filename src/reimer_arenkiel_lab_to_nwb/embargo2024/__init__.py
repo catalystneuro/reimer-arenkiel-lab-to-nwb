@@ -1,2 +1,1 @@
-from .embargo2024behaviorinterface import Embargo2024BehaviorInterface
 from .embargo2024nwbconverter import Embargo2024NWBConverter

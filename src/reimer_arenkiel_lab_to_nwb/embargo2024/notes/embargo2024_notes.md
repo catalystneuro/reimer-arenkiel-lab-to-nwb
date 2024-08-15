@@ -2,6 +2,10 @@
 * subject and session description, datajoint database ([General](#general))
 * 2-photon imaging data, .tiff files with ScanImage format ([Raw Imaging](#raw-imaging))
 * segmentation data, datajoint database ([Segmentation](#segmentation))
+* olphactory stimuli ([Olphactory stimuli](#olphactory))
+* synch signals ([Synch signals](#synch))
+* treadmill ([Treadmill](#treadmill))
+
 
 ## General
 The raw data shared referes to one subject (`animal_is = 134`) one session (`session = 22`).
@@ -18,14 +22,11 @@ Two-photon imaging was performed on a ThorLabs/Janelia 2P-RAM mesoscope. The las
 ![alt text](frame_tiled.png)
 
 ### From dataset
-* Frame dimension: 120x1300
-    From dj summary images we know that each *field* is: 120x400
-    --> field 1: 120 x [:400] 
-    --> field 2: 120 x [1300/2 - 200 : 1300/2 + 200] 
-    --> field 3: 120 x [-400:] 
+* Frame dimension: 120 x n_columns (variable n_columns dimension)
+    We divided the frame in three FOVs
     ![alt text](frame_channel_1.png)
     ![alt text](frame_channel_2.png)
-* From dj --> only one channel used for subject 134
+* From dj --> only one channel used
 ```python
 meso.ScanInfo() & 'animal_id = 134'  & 'session = 22'
 ```
