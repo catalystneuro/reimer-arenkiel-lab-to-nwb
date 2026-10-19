@@ -1,5 +1,6 @@
 """Primary script to run to convert an entire session for of data using the NWBConverter."""
 
+import datetime
 from pathlib import Path
 from typing import Union
 from tqdm import tqdm
@@ -17,6 +18,7 @@ from reimer_arenkiel_lab_to_nwb.dj_utils import (
     get_ophys_keys,
     add_plane_segmentation,
     add_fluorescence,
+    get_imaging_start_time,
     get_session_keys
 )
 
@@ -46,8 +48,6 @@ def session_to_nwb(
     editable_metadata_path = Path(__file__).parent / "embargo2024_metadata.yaml"
     editable_metadata = load_dict_from_file(editable_metadata_path)
 
-    nwbfile = init_nwbfile(key=key, metadata=editable_metadata)
-
     # ophys_keys include all the field, channel, and segmentation_method associated with this session. We will iterate over
     ophys_keys = get_ophys_keys(key=key)
 
@@ -75,6 +75,12 @@ def session_to_nwb(
 
     # Add datetime to conversion
     metadata = converter.get_metadata()
+
+    # The ScanImage epoch is the wall-clock time at the start of the scan, and every series is on the odor clock,
+    # so the session starts at the epoch minus the odor-clock time of the first frame.
+    first_frame_time = get_imaging_start_time(key=ophys_keys[0])
+    session_start_time = metadata["NWBFile"]["session_start_time"] - datetime.timedelta(seconds=first_frame_time)
+    nwbfile = init_nwbfile(key=key, metadata=editable_metadata, session_start_time=session_start_time)
 
     # Update default metadata with the editable in the corresponding yaml file
     metadata = dict_deep_update(metadata, editable_metadata)

@@ -19,6 +19,7 @@ from pynwb.ophys import (
 )
 from scipy.interpolate import interp1d
 from pynwb.base import TimeSeries, Images
+from pynwb.epoch import TimeIntervals
 import datajoint as dj
 from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
 from tqdm import tqdm
@@ -90,7 +91,9 @@ def add_subject(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -> No
     subject_info = (mice.Mice & key).fetch1()
     nwbfile.subject = Subject(
         subject_id=str(subject_info["animal_id"]),
-        date_of_birth=datetime.datetime.combine(subject_info['dob'], datetime.datetime.min.time()),
+        date_of_birth=datetime.datetime.combine(subject_info['dob'], datetime.datetime.min.time()).replace(
+            tzinfo=ZoneInfo("America/Chicago")
+        ),
         sex=subject_info["sex"] if subject_info["sex"] in ("M", "F") else "U",
         description=subject_info["mouse_notes"] or "no notes",
         species="Mus musculus",
@@ -103,9 +106,18 @@ def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -
     if verbose:
         print(f"Adding odor trials for {key}")
 
+    nwbfile.trials = TimeIntervals(
+        name="trials",
+        description=(
+            "One row per entry of the odor.OdorTrials table: a single opening of one olfactometer channel, about 1 s "
+            "long. An odor presentation of several seconds spans consecutive rows, and more than one channel can be "
+            "open at the same time."
+        ),
+    )
     nwbfile.add_trial_column("odorant", "the name of the odorant")
     nwbfile.add_trial_column("concentration", "the concentration of the odorant")
     nwbfile.add_trial_column("solution_date", "the date the odorant solution was made")
+    nwbfile.add_trial_column("channel", "the olfactometer channel that delivered the odorant")
 
     for trial in (odor.OdorTrials & key) * odor.OdorConfig:
         nwbfile.add_trial(
@@ -114,6 +126,7 @@ def add_odor_trials(nwbfile: NWBFile, key: dict = None, verbose: bool = False) -
             odorant=trial["odorant"],
             concentration=float(trial["concentration"]),
             solution_date=str(trial["solution_date"]),
+            channel=int(trial["channel"]),
         )
 
 
@@ -288,7 +301,10 @@ def add_fluorescence(nwbfile, plane_segmentation, key: dict = None, verbose: boo
 
     roi_response_series = RoiResponseSeries(
         name=f"fluorescence_FOV{field}_channel{channel}",
-        description=f"Fluorescence traces from FOV{field} Channel{channel}",
+        description=(
+            f"Fluorescence traces from FOV{field} Channel{channel}, as stored in the meso.Fluorescence.Trace table. "
+            "They are not converted to dF/F, filtered or normalized."
+        ),
         data=fluorescence_trace,
         unit="n.a.",
         timestamps=odor_scan_times[:len(fluorescence_trace)],
@@ -309,18 +325,19 @@ def get_imaging_start_time(key: dict = None):
     odor_scan_times = (odor.OdorSync & restriction).fetch1("frame_times")
     return odor_scan_times[0]
 
-def init_nwbfile(key: dict, metadata: dict = None) -> NWBFile:
+def init_nwbfile(key: dict, metadata: dict = None, session_start_time: datetime.datetime = None) -> NWBFile:
     data = (all_sessions.Session & key).fetch1()
     metadata = metadata or default_ophys_metadata
+    if session_start_time is None:
+        session_start_time = datetime.datetime.combine(data["session_date"], datetime.time(0, 0))
 
     nwbfile_kwargs = deepcopy(metadata["NWBFile"])
 
     nwbfile_kwargs.update(dict(
         session_id=str(data["session"]),
         identifier=str(uuid.uuid4()),
-        session_start_time=datetime.datetime.combine(
-            data["session_date"], datetime.time(0, 0)
-        ).replace(tzinfo=ZoneInfo("America/Chicago"))
+        session_start_time=session_start_time.replace(tzinfo=ZoneInfo("America/Chicago")),
+        notes="DataJoint key of this session: " + ", ".join(f"{name}={value}" for name, value in key.items()),
     ))
 
     nwbfile = NWBFile(**nwbfile_kwargs)
