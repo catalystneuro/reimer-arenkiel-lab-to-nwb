@@ -1,9 +1,12 @@
+from pathlib import Path
 from typing import Optional, Tuple
 import numpy as np
 from roiextractors.extractors.tiffimagingextractors.scanimagetiffimagingextractor import (
-    ScanImageTiffSinglePlaneMultiFileImagingExtractor,
+    ScanImageTiffSinglePlaneImagingExtractor,
 )
+from roiextractors.extractors.tiffimagingextractors.scanimagetiff_utils import extract_extra_metadata, parse_metadata
 from roiextractors.imagingextractor import ImagingExtractor
+from roiextractors.multiimagingextractor import MultiImagingExtractor
 from roiextractors.extraction_tools import PathType, DtypeType, ArrayType
 
 
@@ -37,17 +40,38 @@ class Embargo2024ImagingExtractor(ImagingExtractor):
             file in the folder. The default is True.
         """
 
-        self.imaging_extractor = ScanImageTiffSinglePlaneMultiFileImagingExtractor(
-            folder_path=folder_path,
-            file_pattern=file_pattern,
-            channel_name=channel_name,
-            plane_name='0',
-            extract_all_metadata=extract_all_metadata,
-        )
+        from natsort import natsorted
+
+        file_paths = natsorted(Path(folder_path).glob(file_pattern))
+        if not extract_all_metadata:
+            metadata = self._extract_metadata(file_paths[0])
+        imaging_extractors = []
+        for file_path in file_paths:
+            if extract_all_metadata:
+                metadata = self._extract_metadata(file_path)
+            imaging_extractors.append(
+                ScanImageTiffSinglePlaneImagingExtractor(
+                    file_path=file_path,
+                    channel_name=channel_name,
+                    plane_name='0',
+                    metadata=metadata,
+                    parsed_metadata=parse_metadata(metadata),
+                )
+            )
+        self.imaging_extractor = MultiImagingExtractor(imaging_extractors=imaging_extractors)
         self._times = self.imaging_extractor._times
         fov_length = self.imaging_extractor.get_image_size()[0] // number_of_fields
         boundaries = [[i * fov_length, (i + 1) * fov_length if i < number_of_fields - 1 else -1] for i in range(number_of_fields)]
         self.fov_boundaries = boundaries[field-1]
+
+    @staticmethod
+    def _extract_metadata(file_path: PathType) -> dict:
+        metadata = extract_extra_metadata(file_path=file_path)
+        # In some sessions (e.g. 134_22, 141_5, 141_8) two channels were active but only channel 1 was saved
+        # (SI.hChannels.channelSave = 1). roiextractors counts the active channels, which would read every other
+        # frame of the file as channel 1, so count the saved channels instead.
+        metadata["SI.hChannels.channelsActive"] = metadata["SI.hChannels.channelSave"]
+        return metadata
 
     def get_video(self, start_frame: Optional[int] = None, end_frame: Optional[int] = None, channel: int = 0) -> np.ndarray:
         """
